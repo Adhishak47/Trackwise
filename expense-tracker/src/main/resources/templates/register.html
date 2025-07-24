@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Register</title>
+  <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+<nav class="nav-bar">
+  <div class="nav-brand">
+    <img th:src="@{/images/app-logo.png}" alt="Trackwise Logo" class="nav-logo" />
+    <span>Trackwise</span>
+  </div>
+  <ul class="nav-links">
+    <li><a th:href="@{/}">Home</a></li>
+    <li><a th:href="@{/login}">Login</a></li>
+  </ul>
+</nav>
+
+<div class="container">
+  <div class="auth-card">
+    <h2>Register</h2>
+    <form th:action="@{/register}" method="post">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required />
+      </div>
+
+      <div class="form-group-btn">
+        <button type="submit" class="btn-primary">Register</button>
+      </div>
+    </form>
+
+    <p class="form-footer">Already have an account? <a th:href="@{/login}">Login here</a></p>
+  </div>
+</div>
+</body>
+</html>

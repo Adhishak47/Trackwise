@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Expense</title>
+    <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body class="light-theme">
+
+<div class="add-expense-wrapper">
+    <h2 class="add-expense-heading">Add new expense</h2>
+    <p class="add-expense-subtitle">Enter the details of your expense to help you track your spending.</p>
+
+    <!-- Error and success messages -->
+    <div class="form-error" th:if="${error}" th:text="${error}"></div>
+    <div class="success-message" th:if="${success}" th:text="${success}"></div>
+
+    <!-- Expense Form -->
+    <form th:action="@{/expenses}" th:method="post" th:object="${expense}" class="expense-form">
+
+        <!-- Amount -->
+        <div class="form-group">
+            <label for="amount">Enter Amount</label>
+            <input type="number" id="amount" th:field="*{amount}" placeholder="₹ 0.00" step="1.0" min="0.00" required>
+            <div class="form-error" th:if="${#fields.hasErrors('amount')}" th:text="${#fields.errors('amount')[0]}"></div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+            <label for="description">Description</label>
+            <input type="text" id="description" th:field="*{description}" placeholder="E.g. Groceries, Cab" maxlength="50" required>
+            <div class="form-error" th:if="${#fields.hasErrors('description')}" th:text="${#fields.errors('description')[0]}"></div>
+        </div>
+
+        <!-- Category with Emojis -->
+        <div class="form-group">
+            <label for="categoryId">Category</label>
+            <select id="categoryId" th:field="*{categoryId}" required>
+                <option value="" disabled selected>Select Category</option>
+                <option th:each="category : ${categories}"
+                        th:value="${category.id}"
+                        th:text="${category.name}">
+                </option>
+
+            </select>
+            <div class="form-error" th:if="${#fields.hasErrors('categoryId')}" th:text="${#fields.errors('categoryId')[0]}"></div>
+        </div>
+
+        <!-- Date -->
+        <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" th:value="${#temporals.format(expense.date, 'yyyy-MM-dd')}" required>
+            <div class="form-error" th:if="${#fields.hasErrors('date')}" th:text="${#fields.errors('date')[0]}"></div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="submit-btn-black">Add Expense</button>
+        <a th:href="@{/}" class="cancel-btn-light">Cancel</a>
+    </form>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Expense Reports</title>
+  <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+  <link rel="stylesheet" th:href="@{/css/styles.css}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<!-- Navigation Bar -->
+<nav class="nav-bar">
+  <div class="nav-brand">
+    <img th:src="@{/images/app-logo.png}" alt="Trackwise Logo" class="nav-logo" />
+    <span>Trackwise</span>
+  </div>
+  <!-- Hamburger Icon -->
+  <div class="hamburger" onclick="toggleMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <ul class="nav-links" id="navLinks">
+    <li><a th:href="@{/}">Dashboard</a></li>
+    <li><a th:href="@{/add-expense}">Add Expense</a></li>
+  </ul>
+</nav>
+
+
+<div class="container">
+  <h2>Expense Reports</h2>
+
+  <!-- Date Range Filter -->
+  <div class="date-filter-container">
+    <div class="date-inputs">
+      <label for="startDate">Start Date:</label>
+      <input type="date" id="startDate" th:value="${startDate}">
+      <label for="endDate">End Date:</label>
+      <input type="date" id="endDate" th:value="${endDate}">
+    </div>
+    <div class="filter-buttons">
+      <button onclick="setRange('week')">This Week</button>
+      <button onclick="setRange('month')">This Month</button>
+      <button onclick="setRange('year')">This Year</button>
+    </div>
+  </div>
+
+
+  <div id="reportContent">
+  <!-- Doughnut Chart -->
+  <div class="chart-container">
+    <h3>Expense Category Breakdown</h3>
+    <canvas id="summaryChart"></canvas>
+  </div>
+
+  <!-- Bar Chart -->
+  <div class="chart-container">
+    <h3>Expenses by Category</h3>
+    <canvas id="categoryChart"></canvas>
+  </div>
+  </div>
+
+  <!-- Drill-down Details -->
+  <div id="categoryDetails" class="category-details" style="display: none;">
+    <h3 id="categoryTitle">Category Details</h3>
+    <table class="expense-table">
+      <thead>
+      <tr>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Amount</th>
+      </tr>
+      </thead>
+      <tbody id="expenseList"></tbody>
+    </table>
+    <button onclick="hideCategoryDetails()" class="btn-close">Close</button>
+  </div>
+
+  <div class="export-button-container" >
+    <button id="exportPdfBtn" class="btn btn-primary">
+      <i class="fas fa-file-pdf"></i> Export PDF
+    </button>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  let summaryChart;
+  let categoryChart;
+
+  const categories = /*[[${categories}]]*/ [];
+  const categoryAmounts = /*[[${categoryAmounts}]]*/ [];
+
+  const colors = [
+  '#131200',
+  '#78BC61',
+  '#C0C781',
+  '#C59B76',
+  '#E9806E',
+];
+
+const borderColors = [
+  '#131200',
+  '#78BC61',
+  '#C0C781',
+  '#C59B76',
+  '#E9806E',
+];
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    // Initialize Doughnut Chart
+const summaryCtx = document.getElementById('summaryChart').getContext('2d');
+summaryChart = new Chart(summaryCtx, {
+  type: 'doughnut',
+  data: {
+    labels: categories,
+    datasets: [{
+      data: categoryAmounts,
+      backgroundColor: colors.slice(0, categories.length),
+      borderColor: borderColors.slice(0, categories.length),
+      borderWidth: 2
+    }]
+  },
+  options: {
+    onClick: (event, elements) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const category = summaryChart.data.labels[index];
+        showCategoryDetails(category);
+      }
+    },
+    responsive: true,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#1d1d1f',
+          generateLabels: function (chart) {
+            const dataset = chart.data.datasets[0];
+            return chart.data.labels.map((label, index) => ({
+              text: label,
+              fillStyle: dataset.backgroundColor[index],
+              strokeStyle: dataset.borderColor[index],
+              lineWidth: 1,
+              index: index
+            }));
+          }
+        }
+      },
+      title: {
+        display: true,
+        text: 'Expense Breakdown',
+        color: '#1d1d1f',
+        font: { size: 18 }
+      }
+    }
+  }
+});
+
+
+    // Initialize Bar Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    categoryChart = new Chart(categoryCtx, {
+      type: 'bar',
+      data: {
+        labels: categories,
+        datasets: [{
+          label: 'Expenses by Category',
+          data: categoryAmounts,
+          backgroundColor: colors.slice(0, categories.length),
+          borderColor: borderColors.slice(0, categories.length),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const index = elements[0].index;
+            const category = categoryChart.data.labels[index];
+            showCategoryDetails(category);
+          }
+        },
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              generateLabels: function (chart) {
+                return chart.data.labels.map((label, index) => ({
+                  text: label,
+                  fillStyle: colors[index % colors.length],
+                  strokeStyle: borderColors[index % borderColors.length],
+                  lineWidth: 1
+                }));
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#ccc' } },
+          y: {
+            ticks: { color: '#ccc' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // Load charts with initial data
+    updateCharts(startDateInput.value, endDateInput.value);
+
+    // Date change listeners
+    startDateInput.addEventListener('change', () => {
+      updateCharts(startDateInput.value, endDateInput.value);
+    });
+
+    endDateInput.addEventListener('change', () => {
+      updateCharts(startDateInput.value, endDateInput.value);
+    });
+  });
+
+  function setRange(type) {
+    const today = new Date();
+    let start = new Date();
+
+    if (type === 'week') start.setDate(today.getDate() - 6);
+    else if (type === 'month') start = new Date(today.getFullYear(), today.getMonth(), 1);
+    else if (type === 'year') start = new Date(today.getFullYear(), 0, 1);
+
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = today.toISOString().split('T')[0];
+
+    document.getElementById('startDate').value = startStr;
+    document.getElementById('endDate').value = endStr;
+
+    updateCharts(startStr, endStr);
+  }
+
+  function updateCharts(startDate, endDate) {
+    fetch(`/reports/data?startDate=${startDate}&endDate=${endDate}`)
+      .then(res => res.json())
+      .then(data => {
+        // Update Doughnut
+        summaryChart.data.labels = data.categories;
+        summaryChart.data.datasets[0].data = data.categoryAmounts;
+        summaryChart.data.datasets[0].backgroundColor = colors.slice(0, data.categories.length);
+        summaryChart.data.datasets[0].borderColor = borderColors.slice(0, data.categories.length);
+        summaryChart.options.plugins.title.text = `Total Expenses: ₹${data.totalExpenses.toFixed(2)}`;
+        summaryChart.update();
+
+        // Update Bar
+        categoryChart.data.labels = data.categories;
+        categoryChart.data.datasets[0].data = data.categoryAmounts;
+        categoryChart.data.datasets[0].backgroundColor = colors.slice(0, data.categories.length);
+        categoryChart.data.datasets[0].borderColor = borderColors.slice(0, data.categories.length);
+        categoryChart.update();
+      });
+  }
+
+  function showCategoryDetails(category) {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    fetch(`/reports/category-details?category=${encodeURIComponent(category)}&startDate=${startDate}&endDate=${endDate}`)
+      .then(res => res.json())
+      .then(data => {
+        displayExpenseList(data, category);
+        document.getElementById('categoryDetails').style.display = 'block';
+      });
+  }
+
+  function displayExpenseList(expenses, category) {
+    const expenseList = document.getElementById('expenseList');
+    document.getElementById('categoryTitle').textContent = `Category: ${category}`;
+    expenseList.innerHTML = '';
+
+    if (expenses.length === 0) {
+      expenseList.innerHTML = '<tr><td colspan="3">No expenses found</td></tr>';
+      return;
+    }
+
+    expenses.forEach(exp => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${formatDate(exp.date)}</td>
+        <td>${exp.description}</td>
+        <td>₹${exp.amount.toFixed(2)}</td>
+      `;
+      expenseList.appendChild(row);
+    });
+  }
+
+  function hideCategoryDetails() {
+    document.getElementById('categoryDetails').style.display = 'none';
+  }
+
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN');
+  }
+
+  //Handles PDF export.
+  document.getElementById("exportPdfBtn").addEventListener("click", function () {
+    const element = document.getElementById("reportContent");
+
+    // Optional: Resize charts before printing
+    summaryChart.resize();
+    categoryChart.resize();
+
+    const opt = {
+      margin:       0.5,
+      filename:     'Expense-Report.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  });
+</script>
+<script>
+  function toggleMenu() {
+    const navLinks = document.getElementById('navLinks');
+    navLinks.classList.toggle('active');
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+</body>
+</html>

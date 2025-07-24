@@ -1,0 +1,49 @@
+<!-- edit-expense.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Expense</title>
+    <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body class="dark-mode">
+<div class="container center-container">
+    <div class="form-container">
+        <h2 class="form-title">Edit Expense</h2>
+        <form th:action="@{/expenses}" method="post" th:object="${expense}">
+            <input type="hidden" name="_method" value="put" th:field="*{id}"/>
+
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" th:value="${#temporals.format(expense.date, 'yyyy-MM-dd')}" required />
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" id="description" th:field="*{description}" maxlength="50" required />
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" th:field="*{amount}" step="0.01" min="0.01" max="100000" required />
+            </div>
+
+            <div class="form-group">
+                <label for="categoryId">Category</label>
+                <select id="categoryId" th:field="*{categoryId}" required>
+                    <option value="" disabled>Select Category</option>
+                    <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.name}" th:selected="${category.id == expense.categoryId}"></option>
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">Update</button>
+                <a th:href="@{/}" class="cancel-btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

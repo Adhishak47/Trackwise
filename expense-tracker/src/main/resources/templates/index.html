@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trackwise</title>
+    <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+    <link rel="shortcut icon" th:href="@{/favicon.ico}" />
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/favicon.png}" />
+
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+</head>
+<body>
+<!-- Navigation Bar -->
+<nav class="nav-bar">
+    <div class="nav-brand">
+        <img th:src="@{/images/app-logo.png}" alt="Trackwise Logo" class="nav-logo" />
+        <span>Trackwise</span>
+    </div>
+
+    <div class="hamburger" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <ul class="nav-links" id="navLinks">
+        <li><a th:href="@{/}">Dashboard</a></li>
+        <li><a th:href="@{/reports}">Insights</a></li>
+        <li class="profile-dropdown">
+            <button class="profile-btn">
+                <i class="fas fa-user-circle"></i>
+            </button>
+            <div class="dropdown-content">
+                <a th:href="@{/profile}"><i class="fas fa-user"></i> Profile</a>
+                <a th:href="@{/settings}"><i class="fas fa-cog"></i> Settings</a>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+</nav>
+
+
+<!-- Main Container -->
+<div class="container">
+    <!-- Spending Summary Card -->
+    <div class="spending-summary-card">
+        <div class="summary-content">
+            <p class="summary-title">Total Spending This Month</p>
+            <p class="summary-amount" th:text="'₹' + ${expensesTotal}">₹0.00</p>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-landing">
+        <h1>Recent Expenses</h1>
+        <a th:href="@{/add-expense}" class="add-expense-btn">
+            <i class="fas fa-plus"></i> Add New Expense
+        </a>
+    </div>
+
+    <!-- Expenses Table -->
+    <div class="expense-list-container">
+        <table class="expense-list">
+            <thead>
+            <tr>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="expense : ${expenses}">
+                <td>
+                    <div style="font-weight: 600; color: #1d1d1f;" th:text="${expense.description}">Lunch</div>
+                </td>
+                <td class="expense-amount" th:text="'₹' + ${expense.amount}">₹300</td>
+                <td class="expense-date" th:text="${#temporals.format(expense.date, 'dd MMM yyyy')}">05 Jul 2025</td>
+                <td class="expense-category" th:text="${expense.categoryName}">🍔 Food</td>
+                <td class="action-buttons">
+                    <a th:href="@{'/expenses/' + ${expense.id} + '/edit'}" class="edit-icon" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form th:action="@{'/expenses/' + ${expense.id} + '/delete'}" method="post" style="display:inline;">
+                        <button type="submit" class="delete-icon" title="Delete" onclick="return confirm('Are you sure you want to delete this expense?');">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+
+                </td>
+
+            </tr>
+            <tr th:if="${#lists.isEmpty(expenses)}">
+                <td colspan="5" style="text-align: center; padding: 40px; color: #86868b;">
+                    <i class="fas fa-receipt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No expenses yet</div>
+                    <div style="font-size: 14px;">Start tracking your expenses by adding your first expense</div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    function toggleMenu() {
+        const nav = document.getElementById("navLinks");
+        nav.classList.toggle("active");
+    }
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const nav = document.getElementById("navLinks");
+        const hamburger = document.querySelector('.hamburger');
+
+        if (!nav.contains(event.target) && !hamburger.contains(event.target)) {
+            nav.classList.remove("active");
+        }
+    });
+
+    // Add subtle animations
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.spending-summary-card, .expense-list-container');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+
+    // Toggle user dropdown (mobile)
+  document.addEventListener("DOMContentLoaded", function () {
+    const profileBtn = document.querySelector(".profile-btn");
+    const profileDropdown = document.querySelector(".profile-dropdown");
+
+    profileBtn.addEventListener("click", function (event) {
+      event.stopPropagation(); // Prevent from triggering document click
+      profileDropdown.classList.toggle("active");
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", function (event) {
+      if (!profileDropdown.contains(event.target)) {
+        profileDropdown.classList.remove("active");
+      }
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trackwise - Profile</title>
+  <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+  <link rel="stylesheet" th:href="@{/css/styles.css}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="nav-bar">
+  <div class="nav-brand">
+    <img th:src="@{/images/app-logo.png}" alt="Trackwise Logo" class="nav-logo" />
+    <span>Trackwise</span>
+  </div>  <div class="hamburger" onclick="toggleMenuProfile()">
+    <span></span><span></span><span></span>
+  </div>
+  <ul class="nav-links" id="navLinksProfile">
+    <li><a th:href="@{/}">Dashboard</a></li>
+    <li><a th:href="@{/reports}">Insights</a></li>
+    <li class="profile-dropdown">
+      <button class="profile-button" onclick="toggleProfileDropdownProfile()">
+        <i class="fas fa-user-circle"></i>
+      </button>
+      <div id="profileDropdownProfile" class="dropdown-content">
+        <a th:href="@{/profile}">Profile</a>
+        <a th:href="@{/settings}">Settings</a>
+        <a th:href="@{/logout}">Logout</a>
+      </div>
+    </li>
+  </ul>
+</nav>
+
+<!-- Profile Section -->
+<div class="container">
+  <div class="page-landing">
+    <h1 class="text-center">My Profile</h1>
+  </div>
+
+  <div class="profile-settings-wrapper">
+    <div class="form-card profile-card">
+
+    <div class="profile-avatar">
+      <i class="fas fa-user-circle"></i>
+    </div>
+
+    <div class="form-group">
+      <label>Full Name</label>
+      <div class="readonly-field">Adhish</div>
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <div class="readonly-field">adhish@gmail.com</div>
+    </div>
+
+    <div class="form-group">
+      <label>Member Since</label>
+      <div class="readonly-field">June 1, 2025</div>
+    </div>
+
+    <div class="form-group">
+      <a th:href="@{/settings}" class="btn btn-primary">Edit Profile</a>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script>
+  function toggleMenuProfile() {
+    document.getElementById("navLinksProfile").classList.toggle("active");
+  }
+
+  function toggleProfileDropdownProfile() {
+    const dropdown = document.getElementById("profileDropdownProfile");
+    dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+  }
+
+  document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("profileDropdownProfile");
+    const profileBtn = document.querySelector(".profile-button");
+    if (!dropdown.contains(event.target) && !profileBtn.contains(event.target)) {
+      dropdown.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>
