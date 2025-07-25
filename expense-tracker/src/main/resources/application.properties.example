@@ -1,0 +1,56 @@
+# -------------------------------------------
+# ✅ Example Configuration - Trackwise App
+# Rename this file to 'application.properties'
+# and provide actual values before running.
+# -------------------------------------------
+
+spring.application.name=Expense Tracker
+
+# -------------------------------------------
+# 🌱 H2 or MySQL Database Configuration
+# Use H2 for dev/testing or switch to MySQL
+# -------------------------------------------
+
+# For in-memory H2 (development only)
+spring.datasource.url=jdbc:h2:mem:expense_tracker
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# OR use this for MySQL (example)
+# spring.datasource.url=jdbc:mysql://localhost:3306/expense_tracker
+# spring.datasource.username=your_username
+# spring.datasource.password=your_password
+# spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# -------------------------------------------
+# H2 Console (Optional for testing)
+# -------------------------------------------
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# -------------------------------------------
+# Server Configuration
+# -------------------------------------------
+server.port=8080
+
+# -------------------------------------------
+# JPA / Hibernate Settings
+# -------------------------------------------
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# -------------------------------------------
+# Logging (Optional - Enable for debugging)
+# -------------------------------------------
+logging.level.root=INFO
+logging.level.org.springframework.security=DEBUG
+logging.level.com.expense.tracker.controller=DEBUG
+logging.level.com.expense.tracker.service=DEBUG
+
+# -------------------------------------------
+# Static Assets & Template
+# -------------------------------------------
+spring.web.resources.static-locations=classpath:/static/
+spring.thymeleaf.cache=false

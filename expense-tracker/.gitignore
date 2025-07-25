@@ -32,7 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 
-
 # Ignore Maven/Gradle build files
 /target
 /build
@@ -50,3 +49,8 @@ Thumbs.db
 
 # Environment files
 .env
+
+# Spring Boot specific
+application.properties
+application.yml
+
