@@ -23,6 +23,14 @@ public class Expense {
     @Column(name = "expense_date", columnDefinition = "DATE", nullable = false)
     private LocalDate date;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "entry_type", nullable = false, length = 10,
+            columnDefinition = "VARCHAR(10) DEFAULT 'EXPENSE'")
+    private EntryType type = EntryType.EXPENSE;
+
+    @Column(name = "notes", length = 255)
+    private String notes;
+
     @ManyToOne(
             fetch = FetchType.LAZY,
             cascade = {CascadeType.PERSIST, CascadeType.MERGE}
@@ -67,6 +75,12 @@ public class Expense {
         this.date = date;
     }
 
+    public EntryType getType() { return type; }
+    public void setType(EntryType type) { this.type = type; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
     public Category getCategory() {
         return category;
     }
@@ -83,10 +97,11 @@ public class Expense {
 
     public Expense(){}
 
-    public Expense(BigDecimal amount, String description, LocalDate date, Category category) {
+    public Expense(BigDecimal amount, String description, LocalDate date, Category category, EntryType type) {
         this.amount = amount;
         this.description = description;
         this.date = date;
         this.category = category;
+        this.type = type;
     }
 }

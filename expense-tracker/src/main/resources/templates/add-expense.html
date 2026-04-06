@@ -11,8 +11,8 @@
 <body class="light-theme">
 
 <div class="add-expense-wrapper">
-    <h2 class="add-expense-heading">Add new expense</h2>
-    <p class="add-expense-subtitle">Enter the details of your expense to help you track your spending.</p>
+    <h2 class="add-expense-heading">Add financial record</h2>
+    <p class="add-expense-subtitle">Track income and expenses to stay on top of your finances.</p>
 
     <!-- Error and success messages -->
     <div class="form-error" th:if="${error}" th:text="${error}"></div>
@@ -21,21 +21,33 @@
     <!-- Expense Form -->
     <form th:action="@{/expenses}" th:method="post" th:object="${expense}" class="expense-form">
 
+        <!-- Type (INCOME / EXPENSE) -->
+        <div class="form-group">
+            <label for="type">Type</label>
+            <select id="type" th:field="*{type}" required>
+                <option value="" disabled selected>Select type</option>
+                <option value="INCOME">Income</option>
+                <option value="EXPENSE">Expense</option>
+            </select>
+            <div class="form-error" th:if="${#fields.hasErrors('type')}"
+                 th:text="${#fields.errors('type')[0]}"></div>
+        </div>
+
         <!-- Amount -->
         <div class="form-group">
-            <label for="amount">Enter Amount</label>
-            <input type="number" id="amount" th:field="*{amount}" placeholder="₹ 0.00" step="1.0" min="0.00" required>
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" th:field="*{amount}" placeholder="₹ 0.00" step="any" min="0.01" required>
             <div class="form-error" th:if="${#fields.hasErrors('amount')}" th:text="${#fields.errors('amount')[0]}"></div>
         </div>
 
         <!-- Description -->
         <div class="form-group">
             <label for="description">Description</label>
-            <input type="text" id="description" th:field="*{description}" placeholder="E.g. Groceries, Cab" maxlength="50" required>
+            <input type="text" id="description" th:field="*{description}" placeholder="E.g. Groceries, Salary" maxlength="100" required>
             <div class="form-error" th:if="${#fields.hasErrors('description')}" th:text="${#fields.errors('description')[0]}"></div>
         </div>
 
-        <!-- Category with Emojis -->
+        <!-- Category -->
         <div class="form-group">
             <label for="categoryId">Category</label>
             <select id="categoryId" th:field="*{categoryId}" required>
@@ -56,11 +68,69 @@
             <div class="form-error" th:if="${#fields.hasErrors('date')}" th:text="${#fields.errors('date')[0]}"></div>
         </div>
 
+        <!-- Notes (optional) -->
+        <div class="form-group">
+            <label for="notes">Notes <span style="color: #86868b; font-weight: 400;">(optional)</span></label>
+            <input type="text" id="notes" th:field="*{notes}"
+                   placeholder="Any additional details" maxlength="255">
+            <div class="form-error" th:if="${#fields.hasErrors('notes')}"
+                 th:text="${#fields.errors('notes')[0]}"></div>
+        </div>
+
         <!-- Submit Button -->
-        <button type="submit" class="submit-btn-black">Add Expense</button>
+        <button type="submit" class="submit-btn-black">Save Record</button>
         <a th:href="@{/}" class="cancel-btn-light">Cancel</a>
     </form>
 </div>
+
+<script>
+    const typeSelect     = document.getElementById('type');
+    const categorySelect = document.getElementById('categoryId');
+
+
+    async function loadCategories(type) {
+        if (!type) return;
+
+        categorySelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+
+        try {
+            const response = await fetch(`/api/categories?type=${type}`);
+            if (!response.ok) throw new Error('Failed to fetch categories');
+
+            const categories = await response.json();
+
+            categorySelect.innerHTML = '<option value="" disabled selected>Select category</option>';
+            categories.forEach(cat => {
+                const option    = document.createElement('option');
+                option.value    = cat.id;
+                option.textContent = cat.name;
+
+                const previousId = categorySelect.dataset.selectedId;
+                if (previousId && String(cat.id) === String(previousId)) {
+                    option.selected = true;
+                }
+
+                categorySelect.appendChild(option);
+            });
+        } catch (err) {
+            categorySelect.innerHTML =
+                '<option value="" disabled selected>Error loading categories</option>';
+            console.error('Category load error:', err);
+        }
+    }
+
+    // Fire when user changes the type dropdown
+    typeSelect.addEventListener('change', () => {
+        loadCategories(typeSelect.value);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+         const hiddenCatId = /*[[${expense.categoryId}]]*/ null;
+        if (hiddenCatId) categorySelect.dataset.selectedId = hiddenCatId;
+
+        if (typeSelect.value) loadCategories(typeSelect.value);
+    });
+</script>
 
 </body>
 </html>

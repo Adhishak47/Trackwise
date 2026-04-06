@@ -18,6 +18,13 @@ public class User implements UserDetails {
 
     private String password;
 
+    /**
+     * Controls whether this account can log in.
+     * Defaults to true; admins can set false to deactivate without deleting.
+     */
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean enabled = true;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -52,6 +59,9 @@ public class User implements UserDetails {
         this.roles.add(role);
     }
 
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+
     // Spring Security
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -62,8 +72,9 @@ public class User implements UserDetails {
         return authorities;
     }
 
+    @Override public boolean isEnabled() { return enabled; }
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
+
 }

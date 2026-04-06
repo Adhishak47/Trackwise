@@ -11,9 +11,23 @@
 <body class="dark-mode">
 <div class="container center-container">
     <div class="form-container">
-        <h2 class="form-title">Edit Expense</h2>
+        <h2 class="form-title">Edit record</h2>
         <form th:action="@{/expenses}" method="post" th:object="${expense}">
             <input type="hidden" name="_method" value="put" th:field="*{id}"/>
+
+            <div class="form-group">
+                <label for="type">Type</label>
+                <select id="type" th:field="*{type}" required>
+                    <option value="INCOME"
+                            th:selected="${expense.type != null && expense.type.name() == 'INCOME'}">
+                        Income
+                    </option>
+                    <option value="EXPENSE"
+                            th:selected="${expense.type == null || expense.type.name() == 'EXPENSE'}">
+                        Expense
+                    </option>
+                </select>
+            </div>
 
             <div class="form-group">
                 <label for="date">Date</label>
@@ -22,12 +36,12 @@
 
             <div class="form-group">
                 <label for="description">Description</label>
-                <input type="text" id="description" th:field="*{description}" maxlength="50" required />
+                <input type="text" id="description" th:field="*{description}" maxlength="100" required />
             </div>
 
             <div class="form-group">
                 <label for="amount">Amount</label>
-                <input type="number" id="amount" th:field="*{amount}" step="0.01" min="0.01" max="100000" required />
+                <input type="number" id="amount" th:field="*{amount}" step="any" min="0.01" max="100000" required />
             </div>
 
             <div class="form-group">
@@ -38,6 +52,15 @@
                 </select>
             </div>
 
+            <!-- Notes (optional) -->
+            <div class="form-group">
+                <label for="notes">Notes
+                    <span style="color: #86868b; font-weight: 400;">(optional)</span>
+                </label>
+                <input type="text" id="notes" th:field="*{notes}"
+                       maxlength="255" placeholder="Any additional details" />
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="submit-btn">Update</button>
                 <a th:href="@{/}" class="cancel-btn">Cancel</a>
@@ -45,5 +68,45 @@
         </form>
     </div>
 </div>
+<script>
+    const typeSelect     = document.getElementById('type');
+    const categorySelect = document.getElementById('categoryId');
+
+    async function loadCategories(type) {
+        if (!type) return;
+
+        try {
+            const response  = await fetch(`/api/categories?type=${type}`);
+            const categories = await response.json();
+
+            // The existing categoryId is embedded as a data attribute by Thymeleaf
+            const selectedId = categorySelect.dataset.selectedId;
+
+            categorySelect.innerHTML =
+                '<option value="" disabled>Select category</option>';
+
+            categories.forEach(cat => {
+                const option       = document.createElement('option');
+                option.value       = cat.id;
+                option.textContent = cat.name;
+                // Pre-select the category that was saved on this record
+                if (String(cat.id) === String(selectedId)) option.selected = true;
+                categorySelect.appendChild(option);
+            });
+        } catch (err) {
+            categorySelect.innerHTML =
+                '<option value="" disabled>Error loading categories</option>';
+            console.error('Category load error:', err);
+        }
+    }
+
+    // Reload list when type changes (user switching INCOME ↔ EXPENSE mid-edit)
+    typeSelect.addEventListener('change', () => loadCategories(typeSelect.value));
+
+    // Load immediately on page open using the current type value
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCategories(typeSelect.value);
+    });
+</script>
 </body>
 </html>

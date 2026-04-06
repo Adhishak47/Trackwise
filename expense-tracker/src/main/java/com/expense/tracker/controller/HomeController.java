@@ -4,6 +4,7 @@ import com.expense.tracker.dto.ExpenseDTO;
 import com.expense.tracker.service.CategoryService;
 import com.expense.tracker.service.ExpenseService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,18 +33,30 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model, Principal principal) {
         String username = principal.getName();
-        List<ExpenseDTO> expenses = expenseService.getAllExpenses(username);
+        List<ExpenseDTO> allRecords = expenseService.getAllExpenses(username);
 
         // Calculate total of current month
         LocalDate now = LocalDate.now();
         LocalDate start = now.withDayOfMonth(1);
-        BigDecimal expensesTotal = expenses.stream()
-                .filter(e -> !e.getDate().isBefore(start) && !e.getDate().isAfter(now))
+
+        BigDecimal monthlyExpenses = allRecords.stream()
+                .filter(e -> e.getType() != null &&
+                        e.getType().name().equals("EXPENSE") &&
+                        !e.getDate().isBefore(start) && !e.getDate().isAfter(now))
                 .map(ExpenseDTO::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        model.addAttribute("expenses", expenses);
-        model.addAttribute("expensesTotal", expensesTotal);
+        BigDecimal monthlyIncome = allRecords.stream()
+                .filter(e -> e.getType() != null &&
+                        e.getType().name().equals("INCOME") &&
+                        !e.getDate().isBefore(start) && !e.getDate().isAfter(now))
+                .map(ExpenseDTO::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        model.addAttribute("expenses", allRecords);
+        model.addAttribute("expensesTotal", monthlyExpenses);
+        model.addAttribute("incomeTotal", monthlyIncome);
+        model.addAttribute("netBalance", monthlyIncome.subtract(monthlyExpenses));
 
         return "index";
     }
@@ -65,7 +78,6 @@ public class HomeController {
             @RequestParam String currentPassword,
             @RequestParam String newPassword,
             @RequestParam String confirmPassword,
-            Model model,
             Principal principal
     ) {
         // TODO: Add validation, password change logic etc.
@@ -77,6 +89,7 @@ public class HomeController {
 
     // Show form to add new expense
     @GetMapping("/add-expense")
+    @PreAuthorize("hasRole('ADMIN')")
     public String showAddExpenseForm(Model model) {
         model.addAttribute("expense", new ExpenseDTO());
         model.addAttribute("categories", categoryService.getAllCategories());
@@ -85,6 +98,7 @@ public class HomeController {
 
     // Save new or updated expense
     @PostMapping("/expenses")
+    @PreAuthorize("hasRole('ADMIN')")
     public String saveOrUpdateExpense(
             @Valid @ModelAttribute("expense") ExpenseDTO expenseDTO,
             BindingResult bindingResult,
@@ -113,6 +127,7 @@ public class HomeController {
 
     // Show edit form
     @GetMapping("/expenses/{id}/edit")
+    @PreAuthorize("hasRole('ADMIN')")
     public String showEditExpenseForm(@PathVariable Long id, Model model, Authentication auth) {
         ExpenseDTO expense = expenseService.getExpenseById(id, auth.getName());
         model.addAttribute("expense", expense);
@@ -122,6 +137,7 @@ public class HomeController {
 
     // Delete expense
     @PostMapping("/expenses/{id}/delete")
+    @PreAuthorize("hasRole('ADMIN')")
     public String deleteExpense(@PathVariable Long id, Authentication auth) {
         expenseService.deleteExpense(id, auth.getName());
         return "redirect:/";
@@ -129,17 +145,25 @@ public class HomeController {
 
     // Reports page (GET UI)
     @GetMapping("/reports")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMIN')")
     public String showReports(Model model, Authentication auth) {
         LocalDate end = LocalDate.now();
         LocalDate start = end.withDayOfMonth(1);
 
-        List<ExpenseDTO> expenses = expenseService.getExpensesByDateRange(start, end, auth.getName());
+        List<ExpenseDTO> records = expenseService.getExpensesByDateRange(start, end, auth.getName());
 
-        double total = expenses.stream()
+        double totalExpenses = records.stream()
+                .filter(e -> e.getType() != null && e.getType().name().equals("EXPENSE"))
                 .mapToDouble(e -> e.getAmount().doubleValue())
                 .sum();
 
-        Map<String, Double> categoryMap = expenses.stream()
+        double totalIncome = records.stream()
+                .filter(e -> e.getType() != null && e.getType().name().equals("INCOME"))
+                .mapToDouble(e -> e.getAmount().doubleValue())
+                .sum();
+
+        Map<String, Double> categoryMap = records.stream()
+                .filter(e -> e.getType() != null && e.getType().name().equals("EXPENSE"))
                 .collect(Collectors.groupingBy(
                         ExpenseDTO::getCategoryName,
                         Collectors.summingDouble(e -> e.getAmount().doubleValue())
@@ -148,7 +172,8 @@ public class HomeController {
         model.addAttribute("currentDate", end);
         model.addAttribute("startDate", start);
         model.addAttribute("endDate", end);
-        model.addAttribute("expensesTotal", total);
+        model.addAttribute("expensesTotal", totalExpenses);
+        model.addAttribute("incomeTotal", totalIncome);
         model.addAttribute("categories", new ArrayList<>(categoryMap.keySet()));
         model.addAttribute("categoryAmounts", new ArrayList<>(categoryMap.values()));
 
@@ -157,6 +182,7 @@ public class HomeController {
 
     // Reports chart API
     @GetMapping("/reports/data")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMIN')")
     @ResponseBody
     public Map<String, Object> getReportData(@RequestParam String startDate,
                                              @RequestParam String endDate,
@@ -164,13 +190,18 @@ public class HomeController {
         LocalDate start = LocalDate.parse(startDate);
         LocalDate end = LocalDate.parse(endDate);
 
-        List<ExpenseDTO> expenses = expenseService.getExpensesByDateRange(start, end, auth.getName());
+        List<ExpenseDTO> records = expenseService.getExpensesByDateRange(start, end, auth.getName());
 
-        double totalExpenses = expenses.stream()
-                .mapToDouble(e -> e.getAmount().doubleValue())
-                .sum();
+        double totalExpenses = records.stream()
+                .filter(e -> e.getType() != null && e.getType().name().equals("EXPENSE"))
+                .mapToDouble(e -> e.getAmount().doubleValue()).sum();
 
-        Map<String, Double> categoryMap = expenses.stream()
+        double totalIncome = records.stream()
+                .filter(e -> e.getType() != null && e.getType().name().equals("INCOME"))
+                .mapToDouble(e -> e.getAmount().doubleValue()).sum();
+
+        Map<String, Double> categoryMap = records.stream()
+                .filter(e -> e.getType() != null && e.getType().name().equals("EXPENSE"))
                 .collect(Collectors.groupingBy(
                         ExpenseDTO::getCategoryName,
                         Collectors.summingDouble(e -> e.getAmount().doubleValue())
@@ -178,21 +209,26 @@ public class HomeController {
 
         Map<String, Object> result = new HashMap<>();
         result.put("totalExpenses", totalExpenses);
+        result.put("totalIncome", totalIncome);
+        result.put("netBalance", totalIncome - totalExpenses);
         result.put("categories", new ArrayList<>(categoryMap.keySet()));
         result.put("categoryAmounts", new ArrayList<>(categoryMap.values()));
-
         return result;
+
     }
 
     // Category drill-down endpoint
     @GetMapping("/reports/category-details")
+    @PreAuthorize("hasAnyRole('ANALYST', 'ADMIN')")
     @ResponseBody
-    public List<ExpenseDTO> getCategoryDetails(@RequestParam String category,
-                                               @RequestParam String startDate,
-                                               @RequestParam String endDate,
-                                               Authentication auth) {
+    public List<ExpenseDTO> getCategoryDetails(
+            @RequestParam String category,
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            Authentication auth) {
         LocalDate start = LocalDate.parse(startDate);
         LocalDate end = LocalDate.parse(endDate);
-        return expenseService.getExpensesByCategoryAndDate(category, start, end, auth.getName());
+        return expenseService.getExpensesByCategoryAndDate(
+                category, start, end, auth.getName());
     }
 }

@@ -15,6 +15,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
 public class AuthController {
 
@@ -70,8 +72,12 @@ public class AuthController {
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
 
+        Role viewerRole = roleRepository.findByName("ROLE_VIEWER")
+                .orElseGet(() -> roleRepository.save(new Role("ROLE_VIEWER")));
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.addRole(userRole);
+        user.setRoles(List.of(userRole, viewerRole));
+        user.setEnabled(true);
         userRepository.save(user);
 
         // ✅ Auto-login
